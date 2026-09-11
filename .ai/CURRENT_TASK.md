@@ -1,41 +1,42 @@
 # Current Task
 
-Goal: Complete the First Agent Assignment / architecture bootstrap (README §62) — produce all design artifacts so implementation can start against a stable architecture.
+Goal: Begin Phase 1 (Book Intelligence) implementation at M0 per docs/PHASE1_PLAN.md.
 
-Why: README §62 forbids substantial application code before architecture docs, ADRs, capsule, and schema design exist.
+Why: Architecture bootstrap (README §62) is complete; §62 authorizes implementation start.
 
-Status: In progress (see PROJECT_STATE.md for live status).
+Status: Not started (design-only repository).
 
 Files:
 
-- docs/* (architecture, domain model, roadmap engine, RAG, phase 1 plan)
-- docs/adr/001..003
-- .ai/* (capsule)
-- AGENTS.md
+- docs/PHASE1_PLAN.md        (authoritative plan; M0–M5)
+- docs/ARCHITECTURE.md       (module layout to scaffold)
+- docs/DOMAIN_MODEL.md       (migrations to write in M0)
+- docs/adr/*                 (constraints to honor while building)
 
-Completed:
+Completed (bootstrap):
 
-- README studied (root spec)
-- Git initialized; root commit
-- Roadmint inspected in depth (clone + code read); verdict documented in docs/ROADMAP_ENGINE.md
-- .ai/ capsule created
+- All §62 artifacts: architecture docs, ADRs 001–003, capsule, schema design, Phase 1 plan, Roadmint analysis
 
-Remaining:
+Remaining (Phase 1):
 
-- docs/ARCHITECTURE.md, docs/DOMAIN_MODEL.md (+ initial DB schema), docs/RAG_ARCHITECTURE.md, docs/PHASE1_PLAN.md
-- ADRs 001 (roadmap engine abstraction), 002 (book isolation), 003 (vector storage)
-- Final capsule update + SESSION_HANDOFF.md
+- M0: FastAPI scaffold, Alembic + initial migrations, interface protocols + fakes, lint/type/test wiring
+- M1: ingestion pipeline (upload → parse → TOC/chapters → chunking, idempotent)
+- M2: embeddings + concept extraction (validated schemas)
+- M3: Ask the Book (pgvector retrieval, citations, isolation)
+- M4: minimal Next.js UI (upload + ask with citations)
+- M5: hardening + end-to-end DoD verification (2 books, zero cross-book leakage)
 
-Acceptance Criteria:
+Acceptance Criteria (README §39 Phase 1 DoD):
 
-- All §62 artifacts exist and are internally consistent (schema ↔ domain model ↔ architecture ↔ ADRs)
-- Phase 1 plan is actionable step-by-step with definition of done from README §39
-- Capsule reflects post-bootstrap truth
+- Upload multiple books; ask questions against each independently with citations
+- No cross-book leakage anywhere (retrieval filters workspace_id + book_id)
+- Re-ingestion creates no duplicates; failed stages resume
 
 Known Issues:
 
-- Roadmint's fine-tuned model is GPU-bound and emits unstructured text → conflicts with structured-output invariant; initial engine should be LLM-backed with schema validation (see ADR-001 and docs/ROADMAP_ENGINE.md)
+- LLM/embedding provider needs env credentials at dev time (OPENAI_BASE_URL/KEY style); not committed
+- Local Postgres+pgvector via Docker required for integration tests
 
 Next Action:
 
-Write docs/ARCHITECTURE.md and docs/DOMAIN_MODEL.md, then ADRs, then docs/PHASE1_PLAN.md; close out capsule.
+Implement M0 step 1: FastAPI scaffold (backend/app/* per docs/ARCHITECTURE.md §3) with config, logging, correlation-ID middleware, and a health endpoint; then Alembic init + first migrations.

@@ -1,26 +1,23 @@
 # Project State
 
-Last Verified: 8319ed1 (2026-09-11)
+Last Verified: a7c2792 (2026-09-11)
 
-Current Phase: Architecture bootstrap (README §62). No application code exists.
+Current Phase: Architecture bootstrap COMPLETE (README §62). Next: Phase 1 implementation (Book Intelligence).
 
 Completed:
 
-- README spec (root product document)
-- AGENTS.md operational instructions
-- Git repo initialized (main branch)
-- Roadmint repository inspected in depth → findings in `docs/ROADMAP_ENGINE.md`
-  (verdict: conceptual reference only; do NOT integrate its model or code directly)
+- README spec; AGENTS.md; git repo initialized (main)
+- `.ai/` capsule created and maintained
+- Roadmint inspected in depth → docs/ROADMAP_ENGINE.md. Verdict: reference only; neither code nor model is integrated (GPU-bound, prose-only output, no dependencies/versioning, naive `lines[1]` PDF extraction)
+- docs/ARCHITECTURE.md — components, interface boundaries (LLMProvider, EmbeddingProvider, RetrievalEngine, RoadmapEngine, AssessmentEngine, ObjectStorage), module layout, key flows
+- docs/DOMAIN_MODEL.md — full initial schema (all §31 tables) + isolation/idempotency/append-only rules
+- docs/RAG_ARCHITECTURE.md — retrieval flow, citation contract, knowledge-source separation
+- docs/adr/001 (LLMRoadmapEngine first; Roadmint = reference), 002 (strict book isolation at repository layer), 003 (pgvector, content-addressed embeddings)
+- docs/PHASE1_PLAN.md — milestones M0–M5, verification, risks
 
-In Progress:
-
-- Architecture docs (`docs/ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `ROADMAP_ENGINE.md`, `RAG_ARCHITECTURE.md`)
-- ADRs 001–003
-- `.ai/` capsule (this directory)
-- Initial database/domain schema design
-- Phase 1 implementation plan (`docs/PHASE1_PLAN.md`)
+In Progress: nothing (bootstrap closed)
 
 Not Started:
 
-- All application code (frontend, backend, workers, tests)
-- All phases 1–6 implementation
+- Phase 1 code (backend scaffold M0 is the next action)
+- frontend/, workers/, tests/, scripts/
