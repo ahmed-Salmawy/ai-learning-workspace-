@@ -42,13 +42,19 @@ Scope = README §39 Phase 1: upload, parsing, chunking, embeddings, chapter dete
 2. End-to-end test: upload 2 books (different domains), ask each independently, assert zero cross-book citation leakage.
 3. Update `.ai/` capsule; ADR for any deviation discovered during build.
 
-## Verification Commands (to be finalized in M0 as Makefile/scripts)
+## Verification Commands (finalized in M0; see backend/README.md)
 
 ```bash
-cd backend
-ruff check . && mypy .          # lint + types
-pytest                           # unit + integration (pg via testcontainers or local postgres)
+cd backend                       # venv via uv (see backend/README.md)
+ruff check . && mypy .           # lint + types
+pytest                           # unit tests, no services required
+pytest -m integration            # migrations + ingestion + ask + DoD (needs TEST_DATABASE_URL,
+                                 # local Postgres 16 + pgvector: docker run -e POSTGRES_PASSWORD=…
+                                 # -p 5433:5432 pgvector/pgvector:pg16; export TEST_DATABASE_URL
+                                 # and ALW_DATABASE_URL)
 ```
+
+Frontend (Phase 1 M4): `cd frontend && npm run typecheck && npm run build`.
 
 Integration tests require a local Postgres 16 with pgvector (`docker run -e POSTGRES_PASSWORD=… pgvector/pgvector:pg16`) — document in `backend/README.md` at M0.
 

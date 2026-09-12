@@ -6,6 +6,8 @@ node_modules/
 venv/
 .env
 .env.*
+!.env.example
+!.env.local.example
 *.log
 .DS_Store?
 .next/
@@ -15,3 +17,12 @@ build/
 .mypy_cache/
 .ruff_cache/
 coverage*
+
+# Book sources & derived artifacts (never commit book content)
+/books/
+/data/
+
+# Local storage root & python build artifacts
+var/
+*.egg-info/
+*.tsbuildinfo

@@ -8,6 +8,8 @@ ADR index (full reasoning in `docs/adr/`):
 - ADR-002 — Strict book isolation: all learning entities carry `workspace_id + book_id`; retrieval enforces the filter; cross-book only via explicit request path. (`docs/adr/002-book-isolation.md`)
 - ADR-003 — Vector storage: PostgreSQL + pgvector in the same DB as relational data; no separate vector DB until a justified need exists. Embeddings content-addressed (hash of normalized chunk text). (`docs/adr/003-vector-storage.md`)
 
+- ADR-004 — Phase 1 build deviations: concept dedup = normalized_name only (sim-dedup deferred to Phase 2); capability-based pipeline status routing (CHUNKED terminal without providers); PyMuPDF extraction over MarkItDown; closed tutor_mode enum; in-process JSON metrics. (`docs/adr/004-phase1-build-deviations.md`)
+
 Other significant decisions (no ADR unless architecture-level):
 
 - Roadmint verdict: reuse neither its code nor its model. Valuable only as: interface shape precedent, PDF-heuristic cautionary tale, roadmap-quality evaluation ideas (structure scoring, semantic similarity). Detail: `docs/ROADMAP_ENGINE.md`.
