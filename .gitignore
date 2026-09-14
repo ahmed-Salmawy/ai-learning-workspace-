@@ -26,3 +26,6 @@ coverage*
 var/
 *.egg-info/
 *.tsbuildinfo
+
+# Separate project (user's OpenMAIC clone lives here locally)
+/OpenMAIC/

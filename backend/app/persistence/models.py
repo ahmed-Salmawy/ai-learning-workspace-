@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-EMBEDDING_DIMENSION = 1536
+EMBEDDING_DIMENSION = 384
 
 
 class Base(DeclarativeBase):

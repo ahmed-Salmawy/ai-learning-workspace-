@@ -114,7 +114,7 @@ def _full_pipeline(
     return IngestionPipeline(
         factory,
         storage,
-        embedding_provider=InMemoryEmbeddingProvider(dimension=1536),
+        embedding_provider=InMemoryEmbeddingProvider(dimension=384),
         roadmap_engine=InMemoryRoadmapEngine(
             concepts=_concept_set(), relationships=_relationship_set()
         ),
@@ -141,7 +141,7 @@ def test_full_pipeline_reaches_ready(pg_engine: Engine, tmp_path: Path) -> None:
         assert chunk_rows
         assert all(chunk.embedding is not None for chunk in chunk_rows)
         assert all(chunk.embedding_model == "fake-embedding" for chunk in chunk_rows)
-        assert all(len(chunk.embedding or []) == 1536 for chunk in chunk_rows)
+        assert all(len(chunk.embedding or []) == 384 for chunk in chunk_rows)
 
         concept_repo = ConceptRepository(session, ws, book_id)
         assert concept_repo.count() == 2
@@ -155,7 +155,7 @@ def test_embed_stage_is_content_addressed(pg_engine: Engine, tmp_path: Path) -> 
     book_id = _upload(factory, storage, ws, _small_pdf(1))
 
     pipeline = IngestionPipeline(
-        factory, storage, embedding_provider=InMemoryEmbeddingProvider(dimension=1536)
+        factory, storage, embedding_provider=InMemoryEmbeddingProvider(dimension=384)
     )
     pipeline.run_to_completion(ws, book_id)
 
@@ -249,7 +249,7 @@ def test_failed_extract_stage_resumes(pg_engine: Engine, tmp_path: Path) -> None
     pipeline = IngestionPipeline(
         factory,
         storage,
-        embedding_provider=InMemoryEmbeddingProvider(dimension=1536),
+        embedding_provider=InMemoryEmbeddingProvider(dimension=384),
         roadmap_engine=ExplodingEngine(concepts=_concept_set(), relationships=[]),
     )
     with pytest.raises(RuntimeError, match="simulated extraction crash"):

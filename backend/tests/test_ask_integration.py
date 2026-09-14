@@ -93,7 +93,7 @@ def _ingest_to_ready(
     pipeline = IngestionPipeline(
         factory,
         storage,
-        embedding_provider=InMemoryEmbeddingProvider(dimension=1536),
+        embedding_provider=InMemoryEmbeddingProvider(dimension=384),
         roadmap_engine=InMemoryRoadmapEngine(
             concepts=[
                 ExtractedConcept(
@@ -112,7 +112,7 @@ def _ask_service(
 ) -> AskService:
     return AskService(
         factory,
-        embeddings=InMemoryEmbeddingProvider(dimension=1536),
+        embeddings=InMemoryEmbeddingProvider(dimension=384),
         retrieval=PgVectorRetrievalEngine(factory),
         llm=ScriptedLLM(llm_responses),
     )
@@ -127,7 +127,7 @@ def test_ask_returns_grounded_answer_with_provenance(
     book_id = _ingest_to_ready(factory, storage, ws, _pdf())
 
     question = "Why is count++ not thread safe?"
-    embeddings = InMemoryEmbeddingProvider(dimension=1536)
+    embeddings = InMemoryEmbeddingProvider(dimension=384)
     retrieval = PgVectorRetrievalEngine(factory)
     retrieved = retrieval.search(
         workspace_id=ws,
@@ -250,7 +250,7 @@ def test_ask_isolated_between_books(pg_engine: Engine, tmp_path: Path) -> None:
     book_b = _ingest_to_ready(factory, storage, ws, _pdf(2))
 
     retrieval = PgVectorRetrievalEngine(factory)
-    embeddings = InMemoryEmbeddingProvider(dimension=1536)
+    embeddings = InMemoryEmbeddingProvider(dimension=384)
     question = "count++ visibility atomic"
 
     results_a = retrieval.search(
@@ -333,7 +333,7 @@ def test_ask_endpoint_wiring_and_status_mapping(
         finally:
             session.close()
 
-    embeddings = InMemoryEmbeddingProvider(dimension=1536)
+    embeddings = InMemoryEmbeddingProvider(dimension=384)
     retrieved = PgVectorRetrievalEngine(factory).search(
         workspace_id=ws,
         book_id=book_id,

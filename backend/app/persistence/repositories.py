@@ -60,6 +60,8 @@ class BookRepository:
         book.status = status
         if status == BookStatus.READY:
             book.ingested_at = datetime.now(UTC)
+        if status != BookStatus.FAILED:
+            book.error = None
         self._session.flush()
 
     def set_failed(self, book_id: uuid.UUID, stage: str, message: str) -> None:

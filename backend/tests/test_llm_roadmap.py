@@ -78,7 +78,7 @@ def test_extract_concepts_hard_fails_after_budget() -> None:
     llm = ScriptedLLM(["nope", "still nope", "nope again"])
     engine = LLMRoadmapEngine(llm)
 
-    with pytest.raises(ValueError, match="failed validation"):
+    with pytest.raises(ValueError, match="structured output failed after 3 attempts"):
         engine.extract_concepts(workspace_id=uuid4(), book_id=uuid4(), chunk_texts=["t"])
     assert len(llm.calls) == 3
 

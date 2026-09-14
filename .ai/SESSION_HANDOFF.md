@@ -81,6 +81,20 @@ Last Verified: working tree, uncommitted on top of 18dbe67
 - Retry-with-error-feedback proved itself live: 2 of 4 asks had empty-content first attempts (reasoning model quirk) and were recovered on attempt 2 by the structured_call loop.
 - Credentials live only in gitignored `backend/.env` (z.ai base URL + key + model).
 
+## Local-Embeddings Milestone (added 2026-09-11)
+
+- Migration 0004 (384-dim) + `SentenceTransformerEmbeddingProvider` (`ALW_EMBEDDING_PROVIDER=local`, model all-MiniLM-L6-v2); sentence-transformers is an optional extra (`.[embeddings]`) and baked into the backend Docker image.
+- The user's real upload (Grokking AI Applications) is READY in the compose stack: 327 chunks embedded locally, 537 concepts/58 edges extracted by real GLM. Live API ask returned a grounded answer with 5 real page citations (68s).
+- Hard-won lessons (would bite again): (1) `structured_call` must retry transport errors too — complete() belongs inside the try; (2) reasoning models on free tiers stall >120s on big prompts — ALW_LLM_TIMEOUT + smaller extraction batches (12k chars); (3) SQLAlchemy JSONB: in-place dict mutation + same-object assignment is NOT persisted — assign a fresh dict (or flag_modified); (4) long LLM stages need per-batch commits + a persisted resume marker (in book_sources.metadata) — whole-stage transactions lose everything on a single timeout.
+- Chapter ordinals come from TOC level-1 entries (18 for this book incl. front/back matter); printed chapter numbers may differ, page numbers are real.
+
+## MinerU Extractor Adapter (added 2026-09-11)
+
+- Borrowed from the OpenMAIC research: `MinerUCliDocumentConverter` drives the `mineru` CLI (kept out of our venv — MinerU needs Python ≤3.13, ours is 3.14) and maps MinerU's page-aware content list onto our `TextExtractor` protocol: per-page text with real `page_idx` provenance, TOC from real heading levels (fixes the 18-chapters front/back-matter problem for well-structured books), tables→HTML, formulas→LaTeX, figure captions preserved as text markers.
+- Switch: `ALW_EXTRACTOR=mineru` (+ command/backend/timeout settings). The parse stage records which extractor ran in `book_sources.metadata` and the chunk stage reuses it — no page mapping drift between stages.
+- NOT yet run for real: needs `uv venv .venv-mineru --python 3.13 && uv pip install 'mineru[core]'` (~2GB) — commands in backend/README.md. Then set the two env vars and re-ingest.
+- Remaining extraction limitation (by design, Phase 2+): figure images are detected and captioned but their visual content isn't embedded — that needs multimodal embeddings.
+
 ## Recommended Next Step
 
-Product decision: (a) commit the M0–M5 working tree, (b) start Phase 2 (Roadmaps) planning per README §39 Phase 2 + ADR-001. Optional quality items: non-reasoning GLM model or max_tokens tuning to avoid empty-content first attempts; local or alternative embedding provider for a fully-live vector path.
+Product decision: (a) commit the local-embeddings + robustness + MinerU changeset, (b) install mineru locally and re-ingest the Grokking book with the layout-aware extractor (~2GB download; CPU parse of 250 pages takes minutes), (c) Phase 2 (Roadmaps) planning.

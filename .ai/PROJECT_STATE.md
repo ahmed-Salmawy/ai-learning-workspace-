@@ -2,7 +2,7 @@
 
 Last Verified: working tree, uncommitted on top of 18dbe67 (2026-09-11)
 
-Current Phase: Phase 1 (Book Intelligence) COMPLETE — M0–M5 implemented and verified, INCLUDING a live-LLM DoD run (real GLM glm-4.5-flash: on-topic grounded asks cited correctly, off-topic honestly refused, zero leakage). Awaiting product decision on commit / Phase 2.
+**STATUS: ARCHIVED 2026-09-14** (product owner paused the project in favor of OpenMAIC). Phase 1 (Book Intelligence) COMPLETE — M0–M5 verified incl. live-LLM DoD (GLM glm-4.5-flash) and the user's real book fully ingested to READY (local MiniLM 384-dim + GLM extraction: 327 chunks, 537 concepts, 58 edges, live API ask verified). Everything committed & pushed to github.com/ahmed-Salmawy/ai-learning-workspace-. Resume: `docker compose up -d` (pgdata volume keeps all data).
 
 Completed:
 

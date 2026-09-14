@@ -17,10 +17,18 @@ class Settings(BaseSettings):
     openai_base_url: str | None = None
     openai_api_key: SecretStr | None = None
     llm_model: str | None = None
+    llm_timeout: float = 120.0
     embedding_model: str | None = None
-    embedding_dimension: int = 1536
+    embedding_provider: str = "openai"  # "openai" | "local"
+    local_embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_dimension: int = 384
 
     storage_root: str = "var/storage"
+
+    extractor: str = "pymupdf"  # "pymupdf" | "mineru"
+    mineru_command: str = "mineru"
+    mineru_backend: str = "pipeline"
+    mineru_timeout: float = 3600.0
     cors_origins: str = "http://localhost:3000"
 
 

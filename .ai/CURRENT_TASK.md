@@ -1,3 +1,5 @@
+**PROJECT ARCHIVED 2026-09-14**: product owner paused AI Learning Workspace in favor of OpenMAIC. All work committed and pushed; resume instructions below. No further work scheduled.
+
 # Current Task
 
 Goal: Phase 1 (Book Intelligence) — ALL MILESTONES M0–M5 COMPLETE and verified (2026-09-11).
@@ -73,6 +75,21 @@ Completed (M5, 2026-09-11):
 - ADR-004 records Phase 1 deviations (normalized-name-only concept dedup; capability-based status routing; PyMuPDF over MarkItDown; closed tutor_mode enum; JSON metrics); DECISIONS.md indexed; PHASE1_PLAN verification section updated to actual commands
 - Note: DoD used scripted-LLM + fake embeddings (no env keys on this machine); live-LLM run possible anytime ALW_OPENAI_* is provided
 
+Completed (local embeddings + real book, 2026-09-11):
+
+- Migration `0004_embedding_dim_384`: vector(1536)→vector(384) on content_chunks+concepts, HNSW rebuilt (nulls old vectors; content-addressed re-embed covers recovery). DOMAIN §3.4 flow exercised for real.
+- `SentenceTransformerEmbeddingProvider` (all-MiniLM-L6-v2, 384-dim) behind `ALW_EMBEDDING_PROVIDER=local`; sentence-transformers as `[embeddings]` extra + in backend Dockerfile
+- Grokking AI Applications book (user's upload in compose stack) driven CHUNKED→EMBEDDED→READY: 327 chunks embedded locally, 537 concepts + 58 relationships extracted via real GLM glm-4.5-flash
+- Live API ask verified: grounded answer with 5 chapter/page citations in 68s through the running docker stack
+- Robustness fixes proven needed at scale: structured_call retries transport errors (timeouts) not just JSON validation — complete() moved inside try; per-batch extraction persistence with resume marker in book_sources.metadata (JSONB in-place mutation pitfall: SQLAlchemy needs a NEW dict or flag_modified); books.error cleared on any non-FAILED status; extraction batch default 12k chars; ALW_LLM_TIMEOUT setting (300 for reasoning models)
+
+Completed (MinerU extractor adapter, 2026-09-11):
+
+- `MinerUCliDocumentConverter` (app/orchestration/ingestion/mineru.py): drives the `mineru` CLI (subprocess; MinerU needs Python ≤3.13, so it lives in its own env) and converts its content_list (page_idx per block) into ExtractedDocument — real page provenance, heading-derived TOC, tables→HTML, formulas→LaTeX, figure captions as text markers; headers/footers/page numbers removed by MinerU itself
+- Selected via `ALW_EXTRACTOR=pymupdf|mineru` (+ ALW_MINERU_COMMAND/BACKEND/TIMEOUT); pipeline records the extractor used in book_sources.metadata and reuses it at chunk stage for page consistency; clear failure messages when the CLI is missing/fails
+- 6 new unit tests (fabricated MinerU output tree): page mapping, heading TOC, protocol conformance, CLI args, non-zero exit, timeout, missing content_list — totals 63 passed
+- NOTE: running it for real needs a mineru install in a 3.13 venv (~2GB) — backend/README.md has exact commands; re-ingest a book afterwards to re-parse it
+
 Completed (live-LLM DoD, 2026-09-11, scripts/dod_live.py):
 
 - GLM account facts: glm-4.5-flash (free) works on api.z.ai/api/paas/v4; paid models 429 no-balance; NO embedding model available (embedding-3 → 1211 unknown model); glm-4.5-flash is a reasoning model (reasoning_content separate; supports response_format json_object; usage reported)
@@ -92,10 +109,13 @@ Acceptance Criteria (README §39 Phase 1 DoD):
 
 Known Issues:
 
-- LLM/embedding provider needs env credentials at dev time (OPENAI_BASE_URL/KEY style); not committed
-- Local Postgres+pgvector via Docker required for integration tests
-- MarkItDown 0.1.7 output for the test book lacks headings/figures/page numbers — M1 must decide whether a page-aware, image-aware extractor (e.g. PyMuPDF-backed `DocumentConverter` adapter) is required to meet the Phase 1 citation DoD
+- GLM free tier: reasoning model occasionally returns empty content (retry recovers) and can stall >300s on big batches; paid models 429 no-balance; no embedding model on this account (local MiniLM covers embeddings)
+- 18 "chapters" detected for the Grokking book (TOC level-1 includes front/back matter) — chapter ordinals in citations may not match the book's printed 8-chapter numbering; page numbers are correct
+- First container embed downloads the MiniLM model (~90MB) at runtime; consider an HF cache volume for offline restarts
 
-Next Action:
+Next Action (if un-archived):
 
-None — Phase 1 complete, live-LLM DoD confirmed. Await product decision: (a) commit the working tree (M0–M5 is a large uncommitted changeset), or (b) begin Phase 2 (Roadmaps) planning. Optional quality follow-up: retry empty-content first attempts or use a non-reasoning GLM model if balance allows.
+1. `cd backend && docker compose -f ../docker-compose.yml up -d` (db volume `pgdata` persists — the READY Grokking book + concepts are intact)
+2. Optional: install mineru (backend/README.md) + `ALW_EXTRACTOR=mineru` + reset book to UPLOADED to re-parse layout-aware
+3. Optional: switch chat LLM via ALW_OPENAI_BASE_URL/KEY/MODEL (e.g. OpenRouter deepseek/deepseek-v4-flash)
+4. Phase 2 (Roadmaps) planning per README §39 Phase 2 + ADR-001

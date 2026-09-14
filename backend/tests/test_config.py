@@ -8,7 +8,7 @@ def test_defaults() -> None:
 
     assert settings.app_name == "ai-learning-workspace"
     assert settings.environment == "dev"
-    assert settings.embedding_dimension == 1536
+    assert settings.embedding_dimension == 384
     assert settings.openai_api_key is None
 
 

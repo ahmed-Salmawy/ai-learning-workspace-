@@ -123,7 +123,11 @@ def main() -> None:
         session.flush()
         from sqlalchemy import select
 
-        user_id = session.execute(select(User.id).order_by(User.created_at.desc())).first()[0]
+        user_row = session.execute(
+            select(User.id).order_by(User.created_at.desc())
+        ).first()
+        assert user_row is not None
+        user_id = user_row[0]
         session.add(Workspace(id=ws, owner_user_id=user_id, name="dod-live"))
         session.commit()
 

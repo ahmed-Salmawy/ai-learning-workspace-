@@ -8,7 +8,7 @@ COPY alembic ./alembic
 COPY alembic.ini ./
 COPY scripts ./scripts
 
-RUN pip install --no-cache-dir '.[dev]'
+RUN pip install --no-cache-dir '.[dev,embeddings]'
 
 EXPOSE 8000
 

@@ -8,12 +8,13 @@ from uuid import UUID
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.metrics import METRICS
-from app.engines.llm_roadmap import normalize_name
-from app.engines.protocols import RoadmapEngine
+from app.engines.llm_roadmap import batch_texts, normalize_name
+from app.engines.protocols import ExtractedConcept, RoadmapEngine
 from app.llm.protocols import EmbeddingProvider
 from app.orchestration.ingestion.chunking import ChunkDraft, chunk_document
 from app.orchestration.ingestion.extract import ExtractedDocument, TextExtractor
 from app.orchestration.ingestion.extractors import PlainTextExtractor, PyMuPDFTextExtractor
+from app.orchestration.ingestion.mineru import MinerUCliDocumentConverter
 from app.orchestration.ingestion.toc import DetectedChapter, detect_toc
 from app.persistence.concept_repositories import (
     ConceptRelationshipRepository,
@@ -155,10 +156,13 @@ class IngestionPipeline:
                 if source is None:
                     raise BookNotFoundError(f"book source for {book_id} not found")
                 data = self._storage.get(source.storage_key)
-                extractor = self._extractor or _extractor_for(
-                    source.mime_type, source.original_filename
+                extractor = (
+                    self._extractor
+                    or _configured_extractor()
+                    or _extractor_for(source.mime_type, source.original_filename)
                 )
                 document = extractor.extract(data)
+                extractor_name = type(extractor).__name__
                 detection = detect_toc(document)
                 chapters = _with_front_matter(detection.chapters, _page_count(document))
                 chapter_repo = ChapterRepository(session, workspace_id, book_id)
@@ -188,6 +192,7 @@ class IngestionPipeline:
                         "toc_source": detection.source,
                         "toc_confidence": detection.confidence,
                         "chapters_detected": len(chapters),
+                        "extractor": extractor_name,
                     },
                 )
                 books.set_status(book_id, BookStatus.PARSING)
@@ -239,7 +244,7 @@ class IngestionPipeline:
                 if not chapters:
                     raise ValueError(f"no chapters for book {book_id}; rerun parse stage")
 
-                document = self._load_document(source.storage_key)
+                document = self._load_document(source)
                 drafts = chunk_document(document, chapters)
                 chapter_rows = {chapter.ordinal: chapter for chapter in chapter_repo.list()}
                 valid_drafts = [
@@ -269,9 +274,21 @@ class IngestionPipeline:
             to_status=BookStatus.CHUNKED,
         )
 
-    def _load_document(self, storage_key: str) -> ExtractedDocument:
-        data = self._storage.get(storage_key)
-        return (self._extractor or PyMuPDFTextExtractor()).extract(data)
+    def _load_document(self, source: Any) -> ExtractedDocument:
+        data = self._storage.get(source.storage_key)
+        configured = _configured_extractor()
+        if self._extractor is not None:
+            extractor = self._extractor
+        elif (
+            isinstance(source.source_metadata, dict)
+            and source.source_metadata.get("extractor") == "MinerUCliDocumentConverter"
+        ):
+            extractor = configured or PyMuPDFTextExtractor()
+        elif configured is not None:
+            extractor = configured
+        else:
+            extractor = _extractor_for(source.mime_type, source.original_filename)
+        return extractor.extract(data)
 
     def _mark_failed(self, workspace_id: UUID, book_id: UUID, stage: str, exc: Exception) -> None:
         try:
@@ -341,25 +358,60 @@ class IngestionPipeline:
                     raise BookNotFoundError(f"book {book_id} not found")
 
                 chunk_repo = ChunkRepository(session, workspace_id, book_id)
+                sources = BookSourceRepository(session, workspace_id)
                 concept_repo = ConceptRepository(session, workspace_id, book_id)
                 relationship_repo = ConceptRelationshipRepository(
                     session, workspace_id, book_id
                 )
 
                 chunk_texts = [chunk.text for chunk in chunk_repo.all_ordered()]
-                extracted = engine.extract_concepts(
-                    workspace_id=workspace_id, book_id=book_id, chunk_texts=chunk_texts
+                batches = batch_texts(chunk_texts)
+                source = sources.find_by_book(book_id)
+                metadata = (
+                    dict(source.source_metadata) if source and source.source_metadata else {}
                 )
-                concepts_inserted, concepts_skipped = concept_repo.insert_new(
-                    [
-                        {
-                            "name": concept.name,
-                            "normalized_name": concept.normalized_name,
-                            "description": concept.description,
+                start_index = int(metadata.get("extraction_batch_index", 0))
+                logger.info(
+                    "extract stage resuming at batch %d/%d",
+                    start_index,
+                    len(batches),
+                )
+                concepts_inserted = 0
+                concepts_skipped = 0
+                extracted: list[ExtractedConcept] = []
+                for index in range(start_index, len(batches)):
+                    batch = engine.extract_concepts(
+                        workspace_id=workspace_id,
+                        book_id=book_id,
+                        chunk_texts=batches[index],
+                    )
+                    extracted.extend(batch)
+                    inserted, skipped = concept_repo.insert_new(
+                        [
+                            {
+                                "name": concept.name,
+                                "normalized_name": concept.normalized_name,
+                                "description": concept.description,
+                            }
+                            for concept in batch
+                        ]
+                    )
+                    concepts_inserted += inserted
+                    concepts_skipped += skipped
+                    if source is not None:
+                        source.source_metadata = {
+                            **metadata,
+                            "extraction_batch_index": index + 1,
                         }
-                        for concept in extracted
-                    ]
-                )
+                    session.commit()
+                    metadata["extraction_batch_index"] = index + 1
+                    logger.info(
+                        "extract batch %d/%d committed (%d concepts)",
+                        index + 1,
+                        len(batches),
+                        len(batch),
+                    )
+
                 concepts_by_name = concept_repo.by_normalized_name()
                 dependencies = engine.build_dependencies(
                     workspace_id=workspace_id, book_id=book_id, concepts=extracted
@@ -448,3 +500,16 @@ def _extractor_for(mime_type: str | None, filename: str) -> TextExtractor:
     if (mime_type and "pdf" in mime_type) or name.endswith(".pdf"):
         return PyMuPDFTextExtractor()
     return PlainTextExtractor()
+
+
+def _configured_extractor() -> TextExtractor | None:
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    if settings.extractor == "mineru":
+        return MinerUCliDocumentConverter(
+            command=settings.mineru_command,
+            backend=settings.mineru_backend,
+            timeout_seconds=settings.mineru_timeout,
+        )
+    return None

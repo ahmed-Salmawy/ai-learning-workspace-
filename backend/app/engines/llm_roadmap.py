@@ -44,7 +44,7 @@ class LLMRoadmapEngine:
     ) -> list[ExtractedConcept]:
         concepts: list[ExtractedConcept] = []
         seen: set[str] = set()
-        for batch in _batch_texts(chunk_texts):
+        for batch in batch_texts(chunk_texts):
             prompt = (
                 "Extract the distinct learning concepts from these book passages:\n\n"
                 + "\n\n".join(batch)
@@ -105,7 +105,7 @@ class LLMRoadmapEngine:
         )
 
 
-def _batch_texts(texts: list[str], max_chars: int = 12000) -> list[list[str]]:
+def batch_texts(texts: list[str], max_chars: int = 12000) -> list[list[str]]:
     batches: list[list[str]] = []
     current: list[str] = []
     size = 0

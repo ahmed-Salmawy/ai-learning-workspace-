@@ -42,6 +42,31 @@ uvicorn app.main:app --reload
 curl -i localhost:8000/health   # includes X-Correlation-ID
 ```
 
+## Extractors
+
+Two interchangeable PDF extractors behind the `TextExtractor` protocol:
+
+- `pymupdf` (default): fast, text-layer extraction with page provenance.
+- `mineru`: layout-aware parsing (reading order, headings, tables→HTML,
+  formulas→LaTeX, header/footer removal). Requires a separate install because
+  MinerU needs Python 3.10–3.13 while this project targets 3.12+:
+
+```bash
+uv venv .venv-mineru --python 3.13
+uv pip install --python .venv-mineru/bin/python 'mineru[core]'   # ~2GB incl. models
+```
+
+Then switch via env (command must point at that venv's binary):
+
+```bash
+ALW_EXTRACTOR=mineru
+ALW_MINERU_COMMAND=$PWD/.venv-mineru/bin/mineru
+```
+
+Re-ingest a book to re-parse it; page provenance and heading-derived TOC come
+from MinerU's content list. Figures are detected (captions enter the text) but
+image content itself is a future multimodal step.
+
 ## Config
 
 pydantic-settings, prefix `ALW_`, `.env` supported (gitignored). Secrets

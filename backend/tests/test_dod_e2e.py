@@ -97,7 +97,7 @@ def _ingest(
     pipeline = IngestionPipeline(
         factory,
         storage,
-        embedding_provider=InMemoryEmbeddingProvider(dimension=1536),
+        embedding_provider=InMemoryEmbeddingProvider(dimension=384),
         roadmap_engine=InMemoryRoadmapEngine(
             concepts=[
                 ExtractedConcept(name=name, normalized_name=name.split(".")[0], description=None)
@@ -127,7 +127,7 @@ def test_dod_two_books_zero_cross_book_leakage(pg_engine: Engine, tmp_path: Path
     book_food = _ingest(factory, storage, ws, _domain_pdf(COOKING_TEXT, "Cooking"), "cooking.pdf")
     assert book_java != book_food
 
-    embeddings = InMemoryEmbeddingProvider(dimension=1536)
+    embeddings = InMemoryEmbeddingProvider(dimension=384)
     retrieval = PgVectorRetrievalEngine(factory)
     question = "chapter passage"
 

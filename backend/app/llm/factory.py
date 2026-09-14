@@ -18,10 +18,17 @@ def build_llm_provider(settings: Settings) -> LLMProvider | None:
         base_url=settings.openai_base_url,
         api_key=settings.openai_api_key.get_secret_value(),
         model=settings.llm_model,
+        timeout=settings.llm_timeout,
     )
 
 
 def build_embedding_provider(settings: Settings) -> EmbeddingProvider | None:
+    if settings.embedding_provider == "local":
+        from app.llm.local_embeddings import SentenceTransformerEmbeddingProvider
+
+        return SentenceTransformerEmbeddingProvider(
+            settings.local_embedding_model, settings.embedding_dimension
+        )
     if (
         not settings.openai_base_url
         or not settings.openai_api_key
